@@ -1,0 +1,26 @@
+{
+  "name": "hubot-github-todos",
+  "version": "0.0.1",
+  "description": "Team management with Github Issues.",
+  "main": "index.coffee",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adamjacobbecker/hubot-github-todos"
+  },
+  "keywords": [
+    "hubot",
+    "github",
+    "issues"
+  ],
+  "author": "adamjacobbecker",
+  "license": "MIT",
+  "dependencies": {
+    "hubot": ">= 2.4.0",
+    "underscore": "1.5.2",
+    "underscore.string": "2.3.3",
+    "githubot": "0.4.0"
+  }
+}

@@ -55,3 +55,7 @@ You'll need to create 'done', 'trash', 'upcoming', 'shelf', and 'current' labels
 - alternate syntaxes?
 - what did [i|user] finish [in [period of time]]
 - Automatic time tracking w/ comments
+- Tests!
+
+## License
+MIT

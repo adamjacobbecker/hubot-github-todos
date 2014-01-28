@@ -20,21 +20,22 @@ HUBOT_GITHUB_USER_<NAME>_TOKEN
 
 ## Commands:
 ```
-hubot add task <text> #todos
-hubot ask <user> to <text> #todos
-hubot assign <id> to <user> #todos
-hubot assign <user> to <id> #todos
-hubot finish <id> #todos
-hubot i'll work on <id> #todos
-hubot move <id> to <done|current|upcoming|shelf> #todos
-hubot what am i working on #todos
-hubot what's <user> working on #todos
-hubot what's next #todos
-hubot what's next for <user> #todos
-hubot what's on <user>'s shelf #todos
-hubot what's on my shelf #todos
-hubot work on <id> #todos
-hubot work on <text> #todos
+# Commands:
+hubot add task <text>
+hubot ask <user> to <text>
+hubot assign <id> to <user>
+hubot assign <user> to <id>
+hubot finish <id>
+hubot i'll work on <id>
+hubot move <id> to <done|current|upcoming|shelf>
+hubot what am i working on
+hubot what's <user|everyone> working on
+hubot what's next
+hubot what's next for <user|everyone>
+hubot what's on <user|everyone>'s shelf
+hubot what's on my shelf
+hubot work on <id>
+hubot work on <text>
 ```
 
 ## Notes:

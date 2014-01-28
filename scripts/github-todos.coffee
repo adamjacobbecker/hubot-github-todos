@@ -7,10 +7,10 @@
 #   hubot i'll work on <id> #todos
 #   hubot move <id> to <done|current|upcoming|shelf> #todos
 #   hubot what am i working on #todos
-#   hubot what's <user> working on #todos
+#   hubot what's <user|everyone> working on #todos
 #   hubot what's next #todos
-#   hubot what's next for <user> #todos
-#   hubot what's on <user>'s shelf #todos
+#   hubot what's next for <user|everyone> #todos
+#   hubot what's on <user|everyone>'s shelf #todos
 #   hubot what's on my shelf #todos
 #   hubot work on <id> #todos
 #   hubot work on <text> #todos
@@ -83,7 +83,7 @@ module.exports = (robot) ->
 
   showIssues = (msg, userName, label) ->
     queryParams =
-      assignee: getGithubUser(userName)
+      assignee: if userName.toLowerCase() == 'everyone' then '*' else getGithubUser(userName)
       labels: label
 
     log "Showing issues", queryParams
@@ -93,7 +93,10 @@ module.exports = (robot) ->
           msg.send "No issues found."
       else
         for issue in data
-          msg.send "##{issue.number} #{issue.title}: #{issue.html_url}"
+          if queryParams.assignee == '*'
+            msg.send "#{issue.assignee.login} - ##{issue.number} #{issue.title}: #{issue.html_url}"
+          else
+            msg.send "##{issue.number} #{issue.title}: #{issue.html_url}"
 
   robot.respond /add task (.*)/i, (msg) ->
     addIssue msg, msg.match[1], msg.message.user.name

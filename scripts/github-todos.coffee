@@ -43,16 +43,18 @@ module.exports = (robot) ->
       assignee: getGithubUser(userName)
       labels: [opts.label || 'upcoming']
 
+    options = {}
+
     if (x = getGithubToken(msg.message.user.name))
-      sendData.token = x
+      options.token = x
 
     else if opts.footer
       sendData.body += "\n\n(added by #{getGithubUser(msg.message.user.name) || 'unknown user'}. " +
                    "remember, you'll need to bring them in with an @mention.)"
 
-    log "Adding issue", _.omit(sendData, 'token')
+    log "Adding issue", sendData
 
-    github.post "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues", sendData, (data) ->
+    github.withOptions(options).post "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues", sendData, (data) ->
       msg.send "Added issue ##{data.number}: #{data.html_url}"
 
   moveIssue = (msg, issueId, newLabel, opts = {}) ->
@@ -60,12 +62,14 @@ module.exports = (robot) ->
       state: if newLabel in ['done', 'trash'] then 'closed' else 'open'
       labels: [newLabel.toLowerCase()]
 
+    options = {}
+
     if (x = getGithubToken(msg.message.user.name))
-      sendData.token = x
+      options.token = x
 
-    log "Moving issue", _.omit(sendData, 'token')
+    log "Moving issue", sendData
 
-    github.patch "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", sendData, (data) ->
+    github.withOptions(options).patch "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", sendData, (data) ->
       if _.find(data.labels, ((l) -> l.name.toLowerCase() == newLabel.toLowerCase()))
         msg.send "Moved issue ##{data.number} to #{newLabel.toLowerCase()}: #{data.html_url}"
 
@@ -73,12 +77,14 @@ module.exports = (robot) ->
     sendData =
       assignee: getGithubUser(userName)
 
+    options = {}
+
     if (x = getGithubToken(msg.message.user.name))
-      sendData.token = x
+      options.token = x
 
-    log "Assigning issue", _.omit(sendData, 'token')
+    log "Assigning issue", sendData
 
-    github.patch "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", sendData, (data) ->
+    github.withOptions(options).patch "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", sendData, (data) ->
       msg.send "Assigned issue ##{data.number} to #{data.assignee.login}: #{data.html_url}"
 
   showIssues = (msg, userName, label) ->

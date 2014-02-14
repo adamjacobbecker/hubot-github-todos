@@ -125,20 +125,20 @@ module.exports = (robot) ->
   robot.respond /what am i working on\??/i, (msg) ->
     showIssues msg, msg.message.user.name, 'current'
 
-  robot.respond /what(\'s)?(\sis)? (\S+) working on\??/i, (msg) ->
-    showIssues msg, msg.match[3], 'current'
+  robot.respond /what(\'s|s|\sis) (\S+) working on\??/i, (msg) ->
+    showIssues msg, msg.match[2], 'current'
 
-  robot.respond /what(\'s)?(\sis)? next for (\S+)\??/i, (msg) ->
-    showIssues msg, msg.match[3].replace('?', ''), 'upcoming'
+  robot.respond /what(\'s|s|\sis) next for (\S+)\??/i, (msg) ->
+    showIssues msg, msg.match[2].replace('?', ''), 'upcoming'
 
-  robot.respond /what(\'s)?(\sis)? next\??(\s*)$/i, (msg) ->
+  robot.respond /what(\'s|s|\sis) next\??(\s*)$/i, (msg) ->
     showIssues msg, msg.message.user.name, 'upcoming'
 
-  robot.respond /what(\'s)?(\sis)? on my shelf\??/i, (msg) ->
+  robot.respond /what(\'s|s|\sis) on my shelf\??/i, (msg) ->
     showIssues msg, msg.message.user.name, 'shelf'
 
-  robot.respond /what(\'s)?(\sis)? on (\S+) shelf\??/i, (msg) ->
-    showIssues msg, msg.match[3].split('\'')[0], 'shelf'
+  robot.respond /what(\'s|s|\sis) on (\S+) shelf\??/i, (msg) ->
+    showIssues msg, msg.match[2].split('\'')[0], 'shelf'
 
   robot.respond /assign \#?(\d+) to (\S+)/i, (msg) ->
     assignIssue msg, msg.match[1], msg.match[2]
@@ -146,5 +146,5 @@ module.exports = (robot) ->
   robot.respond /assign (\S+) to \#?(\d+)/i, (msg) ->
     assignIssue msg, msg.match[2], msg.match[1]
 
-  robot.respond /i\'ll work on \#?(\d+)/i, (msg) ->
-    assignIssue msg, msg.match[1], msg.message.user.name
+  robot.respond /i(\'ll|ll) work on \#?(\d+)/i, (msg) ->
+    assignIssue msg, msg.match[2], msg.message.user.name

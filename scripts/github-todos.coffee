@@ -1,3 +1,21 @@
+# Configuration:
+#   HUBOT_GITHUB_TODOS_REPO
+#   HUBOT_GITHUB_TOKEN
+#   HUBOT_GITHUB_USER_<NAME>
+#   HUBOT_GITHUB_USER_<NAME>_TOKEN
+#
+# Notes:
+#   HUBOT_GITHUB_TODOS_REPO = 'username/reponame'
+#   HUBOT_GITHUB_TOKEN = oauth token (we use a "dobthubot" github account)
+#   HUBOT_GITHUB_USER_ADAM = 'adamjacobbecker'
+#   HUBOT_GITHUB_USER_ADAM_TOKEN = adamjacobbecker's oauth token
+#
+#   Individual users' oauth tokens are opt-in, but if you choose
+#   not to add them, you'll end up notifying yourself when you
+#   add a task.
+#
+#   You'll need to create 'done', 'trash', 'upcoming', 'shelf', and 'current' labels.
+#
 # Commands:
 #   hubot add task <text> #todos
 #   hubot ask <user> to <text> #todos
@@ -14,6 +32,9 @@
 #   hubot what's on my shelf #todos
 #   hubot work on <id> #todos
 #   hubot work on <text> #todos
+#
+# License:
+#   MIT
 
 _  = require("underscore")
 _s = require("underscore.string")

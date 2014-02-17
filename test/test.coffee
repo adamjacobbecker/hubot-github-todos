@@ -7,21 +7,121 @@ expect = chai.expect
 
 describe 'github-todos', ->
   beforeEach ->
-    @robot =
-      respond: sinon.spy()
-      hear: sinon.spy()
+    @robot = new Hubot.Robot(null, "mock-adapter", false, "Hubot")
+    @user = @robot.brain.userForId('1', name: "adam", room: "#room")
 
     require('../scripts/github-todos')(@robot)
 
-  # it 'registers a respond listener', ->
-  #   expect(@robot.respond).to.have.been.calledWith(/hello/)
+    @robot.githubTodosSender =
+      addIssue: sinon.spy()
+      moveIssue: sinon.spy()
+      assignIssue: sinon.spy()
+      showIssues: sinon.spy()
 
-  # it 'registers a hear listener', ->
-  #   expect(@robot.hear).to.have.been.calledWith(/orly/)
+    @sendCommand = (x) ->
+      @robot.adapter.receive(new Hubot.TextMessage(@user, "Hubot #{x}"))
 
-  it 'foo', ->
-    robot = new Hubot.Robot(null, "mock-adapter", false, "Hubot")
-    user = robot.brain.userForId('1', name: "adam", room: "#room")
-    robot.adapter.receive(new Hubot.TextMessage(user, "Computer!"))
+    @expectCommand = (commandName, args...) ->
+      args.unshift(sinon.match.any)
+      expect(@robot.githubTodosSender[commandName]).to.have.been.calledWith(args...)
 
-  it 'matches properly'
+  describe "hubot add task <text>", ->
+    it 'works', ->
+      @sendCommand 'add task foo'
+      @expectCommand('addIssue', 'foo', 'adam')
+
+  describe "hubot ask <user> to <text>", ->
+    it 'works', ->
+      @sendCommand 'ask adam to foo'
+      @expectCommand('addIssue', 'foo', 'adam')
+
+  describe "hubot assign <id> to <user>", ->
+    it 'works', ->
+      @sendCommand 'assign 11 to adam'
+      @expectCommand('assignIssue', '11', 'adam')
+
+  describe "hubot assign <user> to <id>", ->
+    it 'works', ->
+      @sendCommand 'assign adam to 11'
+      @expectCommand('assignIssue', '11', 'adam')
+
+  describe "hubot finish <id>", ->
+    it 'works', ->
+      @sendCommand 'finish 11'
+      @expectCommand('moveIssue', '11', 'done')
+
+  describe "hubot i'll work on <id>", ->
+    it 'works', ->
+      @sendCommand "i'll work on 11"
+      @expectCommand('assignIssue', '11', 'adam')
+
+    it 'works without apostrophe', ->
+      @sendCommand "ill work on 11"
+      @expectCommand('assignIssue', '11', 'adam')
+
+  describe "hubot move <id> to <done|current|upcoming|shelf>", ->
+    it 'works', ->
+      @sendCommand "move 11 to upcoming"
+      @expectCommand('moveIssue', '11', 'upcoming')
+
+  describe "hubot what am i working on", ->
+    it 'works', ->
+      @sendCommand "what am i working on"
+      @expectCommand('showIssues', 'adam', 'current')
+
+  describe "hubot what's <user|everyone> working on", ->
+    it 'works', ->
+      @sendCommand "what's clay working on?"
+      @expectCommand('showIssues', 'clay', 'current')
+
+    it 'works without apostrophe', ->
+      @sendCommand "whats clay working on?"
+      @expectCommand('showIssues', 'clay', 'current')
+
+  describe "hubot what's next", ->
+    it 'works', ->
+      @sendCommand "what's next?"
+      @expectCommand('showIssues', 'adam', 'upcoming')
+
+    it 'works without apostrophe', ->
+      @sendCommand "whats next?"
+      @expectCommand('showIssues', 'adam', 'upcoming')
+
+  describe "hubot what's next for <user|everyone>", ->
+    it 'works', ->
+      @sendCommand "what's next for clay?"
+      @expectCommand('showIssues', 'clay', 'upcoming')
+
+    it 'works without apostrophe', ->
+      @sendCommand "whats next for clay?"
+      @expectCommand('showIssues', 'clay', 'upcoming')
+
+  describe "hubot what's on <user|everyone>'s shelf", ->
+    it 'works', ->
+      @sendCommand "what's on everyone's shelf?"
+      @expectCommand('showIssues', 'everyone', 'shelf')
+
+    it 'works without apostrophe', ->
+      @sendCommand "whats on everyone's shelf?"
+      @expectCommand('showIssues', 'everyone', 'shelf')
+
+  describe "hubot what's on my shelf", ->
+    it 'works', ->
+      @sendCommand "what's on my shelf?"
+      @expectCommand('showIssues', 'adam', 'shelf')
+
+    it 'works without apostrophe', ->
+      @sendCommand "whats on my shelf?"
+      @expectCommand('showIssues', 'adam', 'shelf')
+
+  describe "hubot work on <id>", ->
+    it 'works', ->
+      @sendCommand "work on 12"
+      @expectCommand('moveIssue', '12', 'current')
+
+  describe "hubot work on <text>", ->
+    it 'works', ->
+      @sendCommand "work on foo"
+      @expectCommand('addIssue', 'foo', 'adam', { footer: true, label: 'current' })
+
+

@@ -18,7 +18,7 @@
 #
 # Commands:
 #   hubot add task <text> #todos
-#   hubot ask <user> to <text> #todos
+#   hubot ask <user|everyone> to <text> #todos
 #   hubot assign <id> to <user> #todos
 #   hubot assign <user> to <id> #todos
 #   hubot finish <id> #todos
@@ -59,7 +59,20 @@ class GithubTodosSender
     log "Getting GitHub token for #{userName}"
     process.env["HUBOT_GITHUB_USER_#{userName.split(' ')[0].toUpperCase()}_TOKEN"]
 
+  addIssueEveryone: (msg, issueBody, opts) ->
+    userNames = {}
+
+    for k, v of process.env
+      if (x = k.match(/^HUBOT_GITHUB_USER_(\S+)$/)?[1])
+        userNames[x] = v unless x.match(/hubot/i) or x.match(/token/i) or (v in _.values(userNames))
+
+    for userName in _.keys(userNames)
+      @addIssue(msg, issueBody, userName, opts)
+
   addIssue: (msg, issueBody, userName, opts = {}) ->
+    if userName.toLowerCase() in ['all', 'everyone']
+      return @addIssueEveryone(msg, issueBody, opts)
+
     sendData =
       title: doubleUnquote(issueBody).replace(/\"/g, '').split('-')[0]
       body: doubleUnquote(issueBody).split('-')[1] || ''

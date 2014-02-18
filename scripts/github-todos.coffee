@@ -81,20 +81,25 @@ class GithubTodosSender
       msg.send "Added issue ##{data.number}: #{data.html_url}"
 
   moveIssue: (msg, issueId, newLabel, opts = {}) ->
-    sendData =
-      state: if newLabel in ['done', 'trash'] then 'closed' else 'open'
-      labels: [newLabel.toLowerCase()]
+    @github.get "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", (data) =>
+      labelNames = _.pluck(data.labels, 'name')
+      labelNames = _.without(labelNames, 'done', 'trash', 'upcoming', 'shelf', 'current')
+      labelNames.push(newLabel.toLowerCase())
 
-    options = {}
+      sendData =
+        state: if newLabel in ['done', 'trash'] then 'closed' else 'open'
+        labels: labelNames
 
-    if (x = @getGithubToken(msg.message.user.name))
-      options.token = x
+      options = {}
 
-    log "Moving issue", sendData
+      if (x = @getGithubToken(msg.message.user.name))
+        options.token = x
 
-    @github.withOptions(options).patch "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", sendData, (data) ->
-      if _.find(data.labels, ((l) -> l.name.toLowerCase() == newLabel.toLowerCase()))
-        msg.send "Moved issue ##{data.number} to #{newLabel.toLowerCase()}: #{data.html_url}"
+      log "Moving issue", sendData
+
+      @github.withOptions(options).patch "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", sendData, (data) ->
+        if _.find(data.labels, ((l) -> l.name.toLowerCase() == newLabel.toLowerCase()))
+          msg.send "Moved issue ##{data.number} to #{newLabel.toLowerCase()}: #{data.html_url}"
 
   assignIssue: (msg, issueId, userName, opts = {}) ->
     sendData =

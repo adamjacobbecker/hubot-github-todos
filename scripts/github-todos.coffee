@@ -63,7 +63,7 @@ class GithubTodosSender
     userNames = {}
 
     for k, v of process.env
-      if (x = k.match(/^HUBOT_GITHUB_USER_(\S+)$/)?[1])
+      if (x = k.match(/^HUBOT_GITHUB_USER_(\S+)$/)?[1]) && (k != "HUBOT_GITHUB_USER_#{msg.message.user.name.split(' ')[0].toUpperCase()}")
         userNames[x] = v unless x.match(/hubot/i) or x.match(/token/i) or (v in _.values(userNames))
 
     for userName in _.keys(userNames)

@@ -47,6 +47,8 @@ doubleUnquote = (x) ->
 
 class GithubTodosSender
 
+  ISSUE_BODY_SEPARATOR = ' body:'
+
   constructor: (robot) ->
     @robot = robot
     @github = require("githubot")(@robot)
@@ -73,9 +75,13 @@ class GithubTodosSender
     if userName.toLowerCase() in ['all', 'everyone']
       return @addIssueEveryone(msg, issueBody, opts)
 
+    [title, body] = doubleUnquote(issueBody)
+                    .replace(/\"/g, '')
+                    .split(ISSUE_BODY_SEPARATOR)
+
     sendData =
-      title: doubleUnquote(issueBody).replace(/\"/g, '').split('-')[0]
-      body: doubleUnquote(issueBody).split('-')[1] || ''
+      title: title
+      body: body || ''
       assignee: @getGithubUser(userName)
       labels: [opts.label || 'upcoming']
 

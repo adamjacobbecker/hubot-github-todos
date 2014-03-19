@@ -4,7 +4,8 @@
   "description": "Team management with Github Issues.",
   "main": "index.coffee",
   "scripts": {
-    "test": "mocha --compilers coffee:coffee-script"
+    "test": "NODE_ENV=test ./node_modules/.bin/mocha --require coffee-script --compilers coffee:coffee-script/register --recursive ./test",
+    "test-watch": "NODE_ENV=test ./node_modules/.bin/mocha --require coffee-script --compilers coffee:coffee-script --recursive ./test --watch"
   },
   "repository": {
     "type": "git",
@@ -18,16 +19,17 @@
   "author": "adamjacobbecker",
   "license": "MIT",
   "dependencies": {
-    "hubot": ">= 2.4.0",
-    "underscore": "1.5.2",
+    "hubot": ">=2.7.2",
+    "underscore": "1.6.0",
     "underscore.string": "2.3.3",
-    "githubot": "0.5.0"
+    "githubot": "0.5.0",
+    "coffee-script": "^1.7.1"
   },
   "devDependencies": {
-    "chai": "~1.8.1",
-    "sinon": "~1.7.3",
+    "chai": "~1.9.1",
+    "sinon": "~1.9.0",
     "sinon-chai": "~2.5.0",
-    "mocha": "~1.17.1",
+    "mocha": "~1.18.2",
     "hubot-mock-adapter": "~1.0.0"
   }
 }

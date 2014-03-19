@@ -30,6 +30,11 @@ describe 'github-todos', ->
       @sendCommand 'add task foo'
       @expectCommand('addIssue', 'foo', 'adam')
 
+  describe "hubot add task with hyphen in text", ->
+    it 'works', ->
+      @sendCommand 'add task do a flim-flam to the blip-blop'
+      @expectCommand('addIssue', 'do a flim-flam to the blip-blop', 'adam')
+
   describe "hubot ask <user> to <text>", ->
     it 'works', ->
       @sendCommand 'ask adam to foo'
@@ -123,5 +128,3 @@ describe 'github-todos', ->
     it 'works', ->
       @sendCommand "work on foo"
       @expectCommand('addIssue', 'foo', 'adam', { footer: true, label: 'current' })
-
-

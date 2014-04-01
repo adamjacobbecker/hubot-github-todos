@@ -17,6 +17,7 @@ describe 'github-todos', ->
       moveIssue: sinon.spy()
       assignIssue: sinon.spy()
       showIssues: sinon.spy()
+      commentOnIssue: sinon.spy()
 
     @sendCommand = (x) ->
       @robot.adapter.receive(new Hubot.TextMessage(@user, "Hubot #{x}"))
@@ -24,6 +25,9 @@ describe 'github-todos', ->
     @expectCommand = (commandName, args...) ->
       args.unshift(sinon.match.any)
       expect(@robot.githubTodosSender[commandName]).to.have.been.calledWith(args...)
+
+    @expectNoCommand = (commandName) ->
+      expect(@robot.githubTodosSender[commandName]).to.not.have.been.called
 
   describe "hubot add task <text>", ->
     it 'works', ->
@@ -54,6 +58,13 @@ describe 'github-todos', ->
     it 'works', ->
       @sendCommand 'finish 11'
       @expectCommand('moveIssue', '11', 'done')
+      @expectNoCommand('commentOnIssue')
+
+  describe "hubot finish <id> i finished dat ting. it was tough!", ->
+    it 'works', ->
+      @sendCommand 'finish 11 body: i finished dat ting. it was tough!'
+      @expectCommand('moveIssue', '11', 'done')
+      @expectCommand('commentOnIssue', '11', "i finished dat ting. it was tough!")
 
   describe "hubot i'll work on <id>", ->
     it 'works', ->

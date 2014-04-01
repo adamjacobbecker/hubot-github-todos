@@ -22,6 +22,7 @@
 #   hubot assign <id> to <user> #todos
 #   hubot assign <user> to <id> #todos
 #   hubot finish <id> #todos
+#   hubot finish <id> <text> #todos
 #   hubot i'll work on <id> #todos
 #   hubot move <id> to <done|current|upcoming|shelf> #todos
 #   hubot what am i working on #todos
@@ -47,7 +48,7 @@ doubleUnquote = (x) ->
 
 class GithubTodosSender
 
-  ISSUE_BODY_SEPARATOR = ' body:'
+  @ISSUE_BODY_SEPARATOR = ' body:'
 
   constructor: (robot) ->
     @robot = robot
@@ -77,7 +78,7 @@ class GithubTodosSender
 
     [title, body] = doubleUnquote(issueBody)
                     .replace(/\"/g, '')
-                    .split(ISSUE_BODY_SEPARATOR)
+                    .split(@ISSUE_BODY_SEPARATOR)
 
     sendData =
       title: title
@@ -120,6 +121,20 @@ class GithubTodosSender
         if _.find(data.labels, ((l) -> l.name.toLowerCase() == newLabel.toLowerCase()))
           msg.send "Moved issue ##{data.number} to #{newLabel.toLowerCase()}: #{data.html_url}"
 
+  commentOnIssue: (msg, issueId, body, opts = {}) ->
+    sendData =
+      body: body
+
+    options = {}
+
+    if (x = @getGithubToken(msg.message.user.name))
+      options.token = x
+
+    log "Commenting on issue", sendData
+
+    @github.withOptions(options).post "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}/comments", sendData, (data) ->
+      # Nada
+
   assignIssue: (msg, issueId, userName, opts = {}) ->
     sendData =
       assignee: @getGithubUser(userName)
@@ -151,8 +166,6 @@ class GithubTodosSender
           else
             msg.send "##{issue.number} #{issue.title}: #{issue.html_url}"
 
-
-
 module.exports = (robot) ->
   robot.githubTodosSender = new GithubTodosSender(robot)
 
@@ -169,6 +182,9 @@ module.exports = (robot) ->
     robot.githubTodosSender.moveIssue msg, msg.match[2], msg.match[3]
 
   robot.respond /finish\s(task\s)?\#?(\d+)/i, (msg) ->
+    if (comment = msg.message.text.split(GithubTodosSender.ISSUE_BODY_SEPARATOR)[1])
+      robot.githubTodosSender.commentOnIssue msg, msg.match[2], doubleUnquote(_s.trim(comment))
+
     robot.githubTodosSender.moveIssue msg, msg.match[2], 'done'
 
   robot.respond /work on\s(task\s)?\#?(\d+)/i, (msg) ->

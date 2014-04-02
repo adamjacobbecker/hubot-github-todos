@@ -5,7 +5,7 @@
 #   HUBOT_GITHUB_USER_<NAME>_TOKEN
 #
 # Notes:
-#   HUBOT_GITHUB_TODOS_REPO = 'username/reponame'
+#   HUBOT_GITHUB_TODOS_REPO = 'username/reponame' (separate multiple with commas, first one is primary)
 #   HUBOT_GITHUB_TOKEN = oauth token (we use a "dobthubot" github account)
 #   HUBOT_GITHUB_USER_ADAM = 'adamjacobbecker'
 #   HUBOT_GITHUB_USER_ADAM_TOKEN = adamjacobbecker's oauth token
@@ -37,8 +37,9 @@
 # License:
 #   MIT
 
-_  = require("underscore")
-_s = require("underscore.string")
+_  = require 'underscore'
+_s = require 'underscore.string'
+async = require 'async'
 
 log = (msgs...) ->
   console.log(msgs)
@@ -53,6 +54,8 @@ class GithubTodosSender
   constructor: (robot) ->
     @robot = robot
     @github = require("githubot")(@robot)
+    @allRepos = (process.env['HUBOT_GITHUB_TODOS_REPO'] || '').split(',') # default to empty string for tests
+    @primaryRepo = @allRepos[0]
 
   getGithubUser: (userName) ->
     log "Getting GitHub username for #{userName}"
@@ -100,11 +103,11 @@ class GithubTodosSender
 
     log "Adding issue", sendData
 
-    @github.withOptions(@optionsFor(msg)).post "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues", sendData, (data) ->
+    @github.withOptions(@optionsFor(msg)).post "repos/#{@primaryRepo}/issues", sendData, (data) ->
       msg.send "Added issue ##{data.number}: #{data.html_url}"
 
   moveIssue: (msg, issueId, newLabel, opts = {}) ->
-    @github.get "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", (data) =>
+    @github.get "repos/#{@primaryRepo}/issues/#{issueId}", (data) =>
       labelNames = _.pluck(data.labels, 'name')
       labelNames = _.without(labelNames, 'done', 'trash', 'upcoming', 'shelf', 'current')
       labelNames.push(newLabel.toLowerCase())
@@ -115,7 +118,7 @@ class GithubTodosSender
 
       log "Moving issue", sendData
 
-      @github.withOptions(@optionsFor(msg)).patch "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", sendData, (data) ->
+      @github.withOptions(@optionsFor(msg)).patch "repos/#{@primaryRepo}/issues/#{issueId}", sendData, (data) ->
         if _.find(data.labels, ((l) -> l.name.toLowerCase() == newLabel.toLowerCase()))
           msg.send "Moved issue ##{data.number} to #{newLabel.toLowerCase()}: #{data.html_url}"
 
@@ -125,7 +128,7 @@ class GithubTodosSender
 
     log "Commenting on issue", sendData
 
-    @github.withOptions(@optionsFor(msg)).post "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}/comments", sendData, (data) ->
+    @github.withOptions(@optionsFor(msg)).post "repos/#{@primaryRepo}/issues/#{issueId}/comments", sendData, (data) ->
       # Nada
 
   assignIssue: (msg, issueId, userName, opts = {}) ->
@@ -134,7 +137,7 @@ class GithubTodosSender
 
     log "Assigning issue", sendData
 
-    @github.withOptions(@optionsFor(msg)).patch "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", sendData, (data) ->
+    @github.withOptions(@optionsFor(msg)).patch "repos/#{@primaryRepo}/issues/#{issueId}", sendData, (data) ->
       msg.send "Assigned issue ##{data.number} to #{data.assignee.login}: #{data.html_url}"
 
   showIssues: (msg, userName, label) ->
@@ -144,13 +147,25 @@ class GithubTodosSender
 
     log "Showing issues", queryParams
 
-    @github.get "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues", queryParams, (data) ->
-      if _.isEmpty data
+    showIssueFunctions = []
+
+    for repo in @allRepos
+      do (repo) =>
+        showIssueFunctions.push( (cb) =>
+          @github.get "repos/#{repo}/issues", queryParams, (data) ->
+            cb(null, data)
+        )
+
+    async.parallel showIssueFunctions, (err, results) ->
+      log("ERROR: #{err}") if err
+      allResults = [].concat.apply([], results)
+
+      if _.isEmpty allResults
           msg.send "No issues found."
       else
-        for issue in data
+        for issue in allResults
           if queryParams.assignee == '*'
-            msg.send "#{issue.assignee.login} - ##{issue.number} #{issue.title}: #{issue.html_url}"
+            msg.send "#{issue.assignee?.login} - ##{issue.number} #{issue.title}: #{issue.html_url}"
           else
             msg.send "##{issue.number} #{issue.title}: #{issue.html_url}"
 

@@ -73,6 +73,16 @@ class GithubTodosSender
 
     options
 
+  printIssue: (msg, issue, opts = {}) ->
+    str = "#{opts.prefix || ''}"
+
+    if opts.includeAssignee
+      str += "#{issue.assignee?.login} - "
+
+    str += "##{issue.number} #{issue.title} - #{issue.html_url}"
+
+    msg.send(str)
+
   addIssueEveryone: (msg, issueBody, opts) ->
     userNames = {}
 
@@ -103,8 +113,8 @@ class GithubTodosSender
 
     log "Adding issue", sendData
 
-    @github.withOptions(@optionsFor(msg)).post "repos/#{@primaryRepo}/issues", sendData, (data) ->
-      msg.send "Added issue ##{data.number}: #{data.html_url}"
+    @github.withOptions(@optionsFor(msg)).post "repos/#{@primaryRepo}/issues", sendData, (data) =>
+      @printIssue(msg, data, prefix: "Added: ")
 
   moveIssue: (msg, issueId, newLabel, opts = {}) ->
     @github.get "repos/#{@primaryRepo}/issues/#{issueId}", (data) =>
@@ -118,9 +128,9 @@ class GithubTodosSender
 
       log "Moving issue", sendData
 
-      @github.withOptions(@optionsFor(msg)).patch "repos/#{@primaryRepo}/issues/#{issueId}", sendData, (data) ->
+      @github.withOptions(@optionsFor(msg)).patch "repos/#{@primaryRepo}/issues/#{issueId}", sendData, (data) =>
         if _.find(data.labels, ((l) -> l.name.toLowerCase() == newLabel.toLowerCase()))
-          msg.send "Moved issue ##{data.number} to #{newLabel.toLowerCase()}: #{data.html_url}"
+          @printIssue(msg, data, prefix: "Moved to #{newLabel.toLowerCase()}: ")
 
   commentOnIssue: (msg, issueId, body, opts = {}) ->
     sendData =
@@ -137,8 +147,8 @@ class GithubTodosSender
 
     log "Assigning issue", sendData
 
-    @github.withOptions(@optionsFor(msg)).patch "repos/#{@primaryRepo}/issues/#{issueId}", sendData, (data) ->
-      msg.send "Assigned issue ##{data.number} to #{data.assignee.login}: #{data.html_url}"
+    @github.withOptions(@optionsFor(msg)).patch "repos/#{@primaryRepo}/issues/#{issueId}", sendData, (data) =>
+      @printIssue(msg, data, prefix: "Assigned to #{data.assignee.login}: ")
 
   showIssues: (msg, userName, label) ->
     queryParams =
@@ -156,7 +166,7 @@ class GithubTodosSender
             cb(null, data)
         )
 
-    async.parallel showIssueFunctions, (err, results) ->
+    async.parallel showIssueFunctions, (err, results) =>
       log("ERROR: #{err}") if err
       allResults = [].concat.apply([], results)
 
@@ -164,10 +174,7 @@ class GithubTodosSender
           msg.send "No issues found."
       else
         for issue in allResults
-          if queryParams.assignee == '*'
-            msg.send "#{issue.assignee?.login} - ##{issue.number} #{issue.title}: #{issue.html_url}"
-          else
-            msg.send "##{issue.number} #{issue.title}: #{issue.html_url}"
+          @printIssue(msg, issue, { includeAssignee: queryParams.assignee == '*' })
 
 module.exports = (robot) ->
   robot.githubTodosSender = new GithubTodosSender(robot)

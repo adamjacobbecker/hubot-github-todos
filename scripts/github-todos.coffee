@@ -62,6 +62,14 @@ class GithubTodosSender
     log "Getting GitHub token for #{userName}"
     process.env["HUBOT_GITHUB_USER_#{userName.split(' ')[0].toUpperCase()}_TOKEN"]
 
+  optionsFor: (msg) ->
+    options = {}
+
+    if (x = @getGithubToken(msg.message.user.name))
+      options.token = x
+
+    options
+
   addIssueEveryone: (msg, issueBody, opts) ->
     userNames = {}
 
@@ -86,18 +94,13 @@ class GithubTodosSender
       assignee: @getGithubUser(userName)
       labels: [opts.label || 'upcoming']
 
-    options = {}
-
-    if (x = @getGithubToken(msg.message.user.name))
-      options.token = x
-
-    else if opts.footer
+    if opts.footer && _.isEmpty(@optionsFor(msg))
       sendData.body += "\n\n(added by #{@getGithubUser(msg.message.user.name) || 'unknown user'}. " +
                    "remember, you'll need to bring them in with an @mention.)"
 
     log "Adding issue", sendData
 
-    @github.withOptions(options).post "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues", sendData, (data) ->
+    @github.withOptions(@optionsFor(msg)).post "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues", sendData, (data) ->
       msg.send "Added issue ##{data.number}: #{data.html_url}"
 
   moveIssue: (msg, issueId, newLabel, opts = {}) ->
@@ -110,14 +113,9 @@ class GithubTodosSender
         state: if newLabel in ['done', 'trash'] then 'closed' else 'open'
         labels: labelNames
 
-      options = {}
-
-      if (x = @getGithubToken(msg.message.user.name))
-        options.token = x
-
       log "Moving issue", sendData
 
-      @github.withOptions(options).patch "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", sendData, (data) ->
+      @github.withOptions(@optionsFor(msg)).patch "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", sendData, (data) ->
         if _.find(data.labels, ((l) -> l.name.toLowerCase() == newLabel.toLowerCase()))
           msg.send "Moved issue ##{data.number} to #{newLabel.toLowerCase()}: #{data.html_url}"
 
@@ -125,28 +123,18 @@ class GithubTodosSender
     sendData =
       body: body
 
-    options = {}
-
-    if (x = @getGithubToken(msg.message.user.name))
-      options.token = x
-
     log "Commenting on issue", sendData
 
-    @github.withOptions(options).post "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}/comments", sendData, (data) ->
+    @github.withOptions(@optionsFor(msg)).post "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}/comments", sendData, (data) ->
       # Nada
 
   assignIssue: (msg, issueId, userName, opts = {}) ->
     sendData =
       assignee: @getGithubUser(userName)
 
-    options = {}
-
-    if (x = @getGithubToken(msg.message.user.name))
-      options.token = x
-
     log "Assigning issue", sendData
 
-    @github.withOptions(options).patch "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", sendData, (data) ->
+    @github.withOptions(@optionsFor(msg)).patch "repos/#{process.env['HUBOT_GITHUB_TODOS_REPO']}/issues/#{issueId}", sendData, (data) ->
       msg.send "Assigned issue ##{data.number} to #{data.assignee.login}: #{data.html_url}"
 
   showIssues: (msg, userName, label) ->

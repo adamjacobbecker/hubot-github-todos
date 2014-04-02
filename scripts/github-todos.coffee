@@ -79,6 +79,9 @@ class GithubTodosSender
     if opts.includeAssignee
       str += "#{issue.assignee?.login} - "
 
+    if !issue.url.match(@primaryRepo)
+      str += "#{issue.url.split('repos/')[1].split('/issues')[0]} "
+
     str += "##{issue.number} #{issue.title} - #{issue.html_url}"
 
     msg.send(str)

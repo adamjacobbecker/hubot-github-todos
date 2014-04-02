@@ -78,7 +78,7 @@ class GithubTodosSender
 
     [title, body] = doubleUnquote(issueBody)
                     .replace(/\"/g, '')
-                    .split(@ISSUE_BODY_SEPARATOR)
+                    .split(GithubTodosSender.ISSUE_BODY_SEPARATOR)
 
     sendData =
       title: title

@@ -121,6 +121,10 @@ describe 'github-todos', ->
       @sendCommand "whats on everyone's shelf?"
       @expectCommand('showIssues', 'everyone', 'shelf')
 
+    it 'handles smart quotes', ->
+      @sendCommand "what’s on everyone's shelf?"
+      @expectCommand('showIssues', 'everyone', 'shelf')
+
   describe "hubot what's on my shelf", ->
     it 'works', ->
       @sendCommand "what's on my shelf?"

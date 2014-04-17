@@ -206,19 +206,19 @@ module.exports = (robot) ->
   robot.respond /what am i working on\??/i, (msg) ->
     robot.githubTodosSender.showIssues msg, msg.message.user.name, 'current'
 
-  robot.respond /what(\'s|s|\sis) (\S+) working on\??/i, (msg) ->
+  robot.respond /what(['|’]s|s|\sis) (\S+) working on\??/i, (msg) ->
     robot.githubTodosSender.showIssues msg, msg.match[2], 'current'
 
-  robot.respond /what(\'s|s|\sis) next for (\S+)\??/i, (msg) ->
+  robot.respond /what(['|’]s|s|\sis) next for (\S+)\??/i, (msg) ->
     robot.githubTodosSender.showIssues msg, msg.match[2].replace('?', ''), 'upcoming'
 
-  robot.respond /what(\'s|s|\sis) next\??(\s*)$/i, (msg) ->
+  robot.respond /what(['|’]s|s|\sis) next\??(\s*)$/i, (msg) ->
     robot.githubTodosSender.showIssues msg, msg.message.user.name, 'upcoming'
 
-  robot.respond /what(\'s|s|\sis) on my shelf\??/i, (msg) ->
+  robot.respond /what(['|’]s|s|\sis) on my shelf\??/i, (msg) ->
     robot.githubTodosSender.showIssues msg, msg.message.user.name, 'shelf'
 
-  robot.respond /what(\'s|s|\sis) on (\S+) shelf\??/i, (msg) ->
+  robot.respond /what(['|’]s|s|\sis) on (\S+) shelf\??/i, (msg) ->
     robot.githubTodosSender.showIssues msg, msg.match[2].split('\'')[0], 'shelf'
 
   robot.respond /assign \#?(\d+) to (\S+)/i, (msg) ->
@@ -227,5 +227,5 @@ module.exports = (robot) ->
   robot.respond /assign (\S+) to \#?(\d+)/i, (msg) ->
     robot.githubTodosSender.assignIssue msg, msg.match[2], msg.match[1]
 
-  robot.respond /i(\'ll|ll) work on \#?(\d+)/i, (msg) ->
+  robot.respond /i(['|’]ll|ll) work on \#?(\d+)/i, (msg) ->
     robot.githubTodosSender.assignIssue msg, msg.match[2], msg.message.user.name

@@ -76,7 +76,7 @@ class GithubTodosSender
 
     options
 
-  printIssue: (msg, issue, opts = {}) ->
+  getIssueText: (issue, opts = {}) ->
     str = "#{opts.prefix || ''}"
 
     if opts.includeAssignee
@@ -87,14 +87,14 @@ class GithubTodosSender
 
     str += "##{issue.number} #{issue.title} - #{issue.html_url}"
 
-    msg.send(str)
+    str
 
-  printMilestone: (msg, milestone, opts = {}) ->
+  getMilestoneText: (milestone, opts = {}) ->
     repoName = milestone.url.split('repos/')[1].split('/milestones')[0]
     milestoneIssuesUrl = "https://github.com/#{repoName}/issues?milestone=#{milestone.number}&state=open"
     dueDateText = if milestone.due_on then moment(milestone.due_on).fromNow(true) else "No due date"
 
-    msg.send """
+    """
       #{repoName} #{milestone.title} - #{dueDateText} - #{milestoneIssuesUrl}
     """
 
@@ -129,7 +129,7 @@ class GithubTodosSender
     log "Adding issue", sendData
 
     @github.withOptions(@optionsFor(msg)).post "repos/#{@primaryRepo}/issues", sendData, (data) =>
-      @printIssue(msg, data, prefix: "Added: ")
+      msg.send @getIssueText(data, prefix: "Added: ")
 
   moveIssue: (msg, issueId, newLabel, opts = {}) ->
     @github.get "repos/#{@primaryRepo}/issues/#{issueId}", (data) =>
@@ -145,7 +145,7 @@ class GithubTodosSender
 
       @github.withOptions(@optionsFor(msg)).patch "repos/#{@primaryRepo}/issues/#{issueId}", sendData, (data) =>
         if _.find(data.labels, ((l) -> l.name.toLowerCase() == newLabel.toLowerCase()))
-          @printIssue(msg, data, prefix: "Moved to #{newLabel.toLowerCase()}: ")
+          msg.send @getIssueText(data, prefix: "Moved to #{newLabel.toLowerCase()}: ")
 
   commentOnIssue: (msg, issueId, body, opts = {}) ->
     sendData =
@@ -163,7 +163,7 @@ class GithubTodosSender
     log "Assigning issue", sendData
 
     @github.withOptions(@optionsFor(msg)).patch "repos/#{@primaryRepo}/issues/#{issueId}", sendData, (data) =>
-      @printIssue(msg, data, prefix: "Assigned to #{data.assignee.login}: ")
+      msg.send @getIssueText(data, prefix: "Assigned to #{data.assignee.login}: ")
 
   showIssues: (msg, userName, label) ->
     queryParams =
@@ -188,8 +188,7 @@ class GithubTodosSender
       if _.isEmpty allResults
           msg.send "No issues found."
       else
-        for issue in allResults
-          @printIssue(msg, issue, { includeAssignee: queryParams.assignee == '*' })
+        msg.send _.map(allResults, ((issue) => @getIssueText(issue, { includeAssignee: queryParams.assignee == '*' }))).join("\n")
 
   showMilestones: (msg, repoName) ->
     queryParams =
@@ -222,8 +221,7 @@ class GithubTodosSender
       if _.isEmpty allResults
           msg.send "No milestones found."
       else
-        for milestone in allResults
-          @printMilestone(msg, milestone)
+        msg.send _.map(allResults, ((milestone) => @getMilestoneText(milestone))).join("\n")
 
 module.exports = (robot) ->
   robot.githubTodosSender = new GithubTodosSender(robot)

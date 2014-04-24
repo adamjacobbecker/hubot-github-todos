@@ -33,6 +33,8 @@
 #   hubot what's on my shelf #todos
 #   hubot work on <id> #todos
 #   hubot work on <text> #todos
+#   hubot show milestones #todos
+#   hubot show milestones for <repo> #todos
 #
 # License:
 #   MIT
@@ -40,6 +42,7 @@
 _  = require 'underscore'
 _s = require 'underscore.string'
 async = require 'async'
+moment = require 'moment'
 
 log = (msgs...) ->
   console.log(msgs)
@@ -85,6 +88,15 @@ class GithubTodosSender
     str += "##{issue.number} #{issue.title} - #{issue.html_url}"
 
     msg.send(str)
+
+  printMilestone: (msg, milestone, opts = {}) ->
+    repoName = milestone.url.split('repos/')[1].split('/milestones')[0]
+    milestoneIssuesUrl = "https://github.com/#{repoName}/issues?milestone=#{milestone.number}&state=open"
+    dueDateText = if milestone.due_on then moment(milestone.due_on).fromNow(true) else "No due date"
+
+    msg.send """
+      #{repoName} #{milestone.title} - #{dueDateText} - #{milestoneIssuesUrl}
+    """
 
   addIssueEveryone: (msg, issueBody, opts) ->
     userNames = {}
@@ -179,6 +191,40 @@ class GithubTodosSender
         for issue in allResults
           @printIssue(msg, issue, { includeAssignee: queryParams.assignee == '*' })
 
+  showMilestones: (msg, repoName) ->
+    queryParams =
+      state: 'open'
+
+    log "Showing milestones", queryParams
+
+    showMilestoneFunctions = []
+
+    selectedRepos = if repoName == 'all'
+      @allRepos
+    else
+      _.filter @allRepos, (repo) ->
+        repo.split('/')[1].match(repoName)
+
+    for repo in selectedRepos
+      do (repo) =>
+        showMilestoneFunctions.push( (cb) =>
+          @github.get "repos/#{repo}/milestones", queryParams, (data) ->
+            cb(null, data)
+        )
+
+    async.parallel showMilestoneFunctions, (err, results) =>
+      log("ERROR: #{err}") if err
+      allResults = [].concat.apply([], results)
+
+      allResults = _.sortBy allResults, (r) ->
+        r.due_on || "9"
+
+      if _.isEmpty allResults
+          msg.send "No milestones found."
+      else
+        for milestone in allResults
+          @printMilestone(msg, milestone)
+
 module.exports = (robot) ->
   robot.githubTodosSender = new GithubTodosSender(robot)
 
@@ -229,3 +275,9 @@ module.exports = (robot) ->
 
   robot.respond /i(['|’]ll|ll) work on \#?(\d+)/i, (msg) ->
     robot.githubTodosSender.assignIssue msg, msg.match[2], msg.message.user.name
+
+  robot.respond /show milestones for (\S+)/i, (msg) ->
+    robot.githubTodosSender.showMilestones msg, msg.match[1]
+
+  robot.respond /show milestones(\s*)$/i, (msg) ->
+    robot.githubTodosSender.showMilestones msg, 'all'

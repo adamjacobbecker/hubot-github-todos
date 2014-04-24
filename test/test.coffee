@@ -17,6 +17,7 @@ describe 'github-todos', ->
       moveIssue: sinon.spy()
       assignIssue: sinon.spy()
       showIssues: sinon.spy()
+      showMilestones: sinon.spy()
       commentOnIssue: sinon.spy()
 
     @sendCommand = (x) ->
@@ -143,3 +144,13 @@ describe 'github-todos', ->
     it 'works', ->
       @sendCommand "work on foo"
       @expectCommand('addIssue', 'foo', 'adam', { footer: true, label: 'current' })
+
+  describe "hubot show milestones", ->
+    it 'works', ->
+      @sendCommand "show milestones"
+      @expectCommand('showMilestones', 'all')
+
+  describe "hubot show milestones for <repo>", ->
+    it 'works', ->
+      @sendCommand "show milestones for screendoor-v2"
+      @expectCommand('showMilestones', 'screendoor-v2')

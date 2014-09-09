@@ -67,6 +67,21 @@ describe 'github-todos', ->
       @expectCommand('moveIssue', '11', 'done')
       @expectCommand('commentOnIssue', '11', "i finished dat ting. it was tough!")
 
+    it 'strips quotes', ->
+      @sendCommand 'finish 11 body: "i finished dat ting. it was tough!"'
+      @expectCommand('moveIssue', '11', 'done')
+      @expectCommand('commentOnIssue', '11', "i finished dat ting. it was tough!")
+
+    it 'strips smart double quotes', ->
+      @sendCommand 'finish 11 body: “i finished dat ting. it was tough!”'
+      @expectCommand('moveIssue', '11', 'done')
+      @expectCommand('commentOnIssue', '11', "i finished dat ting. it was tough!")
+
+    it 'strips smart single quotes', ->
+      @sendCommand 'finish 11 body: ‘i finished dat ting. it was tough!’'
+      @expectCommand('moveIssue', '11', 'done')
+      @expectCommand('commentOnIssue', '11', "i finished dat ting. it was tough!")
+
   describe "hubot i'll work on <id>", ->
     it 'works', ->
       @sendCommand "i'll work on 11"

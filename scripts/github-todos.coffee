@@ -49,6 +49,11 @@ log = (msgs...) ->
 
 doubleUnquote = (x) ->
   _s.unquote(_s.unquote(x), "'")
+    .replace(/^“/, '')
+    .replace(/”$/, '')
+    .replace(/^“/, '')
+    .replace(/^‘/, '')
+    .replace(/’$/, '')
 
 class GithubTodosSender
 

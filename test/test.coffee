@@ -61,7 +61,7 @@ describe 'github-todos', ->
       @expectCommand('moveIssue', '11', 'done')
       @expectNoCommand('commentOnIssue')
 
-  describe "hubot finish <id> i finished dat ting. it was tough!", ->
+  describe "hubot finish <id> with body", ->
     it 'works', ->
       @sendCommand 'finish 11 body: i finished dat ting. it was tough!'
       @expectCommand('moveIssue', '11', 'done')
@@ -95,6 +95,15 @@ describe 'github-todos', ->
     it 'works', ->
       @sendCommand "move 11 to upcoming"
       @expectCommand('moveIssue', '11', 'upcoming')
+
+  describe "specifying a repo", ->
+    it 'works with a simple repo name', ->
+      @sendCommand "move foobar#11 to upcoming"
+      @expectCommand('moveIssue', 'foobar#11', 'upcoming')
+
+    it 'works with a more complex repo name', ->
+      @sendCommand "move screendoor-v2#11 to upcoming"
+      @expectCommand('moveIssue', 'screendoor-v2#11', 'upcoming')
 
   describe "hubot what am i working on", ->
     it 'works', ->
@@ -155,10 +164,10 @@ describe 'github-todos', ->
       @sendCommand "work on 12"
       @expectCommand('moveIssue', '12', 'current')
 
-  describe "hubot work on <text>", ->
-    it 'works', ->
-      @sendCommand "work on foo"
-      @expectCommand('addIssue', 'foo', 'adam', { footer: true, label: 'current' })
+    it 'parses complex repo name', ->
+      @sendCommand "work on screendoor-v2#12"
+      @expectCommand('moveIssue', 'screendoor-v2#12', 'current')
+      @expectNoCommand('addIssue')
 
   describe "hubot show milestones", ->
     it 'works', ->

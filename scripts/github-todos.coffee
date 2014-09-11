@@ -34,6 +34,8 @@
 #   hubot work on <id> #todos
 #   hubot work on <repo>#<id> #todos
 #   hubot show milestones #todos
+#   hubot show milestones with a due date #todos
+#   hubot show milestones with due dates #todos
 #   hubot show milestones for <repo> #todos
 #
 # License:
@@ -211,7 +213,7 @@ class GithubTodosSender
       else
         msg.send _.map(allResults, ((issue) => @getIssueText(issue, { includeAssignee: queryParams.assignee == '*' }))).join("\n")
 
-  showMilestones: (msg, repoName) ->
+  showMilestones: (msg, repoName, opts = {}) ->
     queryParams =
       state: 'open'
 
@@ -235,6 +237,9 @@ class GithubTodosSender
     async.parallel showMilestoneFunctions, (err, results) =>
       log("ERROR: #{err}") if err
       allResults = [].concat.apply([], results)
+
+      if opts.dueDate
+        allResults = _.filter allResults, (r) -> r.due_on
 
       allResults = _.sortBy allResults, (r) ->
         r.due_on || "9"
@@ -293,7 +298,10 @@ module.exports = (robot) ->
     robot.githubTodosSender.assignIssue msg, msg.match[2], msg.message.user.name
 
   robot.respond /show milestones for (\S+)/i, (msg) ->
-    robot.githubTodosSender.showMilestones msg, msg.match[1]
+    robot.githubTodosSender.showMilestones msg, msg.match[1], dueDate: (if msg.message.match('due date') then true else false)
 
   robot.respond /show milestones(\s*)$/i, (msg) ->
     robot.githubTodosSender.showMilestones msg, 'all'
+
+  robot.respond /show milestones with (a\s)?due date/i, (msg) ->
+    robot.githubTodosSender.showMilestones msg, 'all', dueDate: true

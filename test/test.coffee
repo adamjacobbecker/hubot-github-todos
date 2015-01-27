@@ -5,6 +5,10 @@ Hubot = require('hubot')
 
 expect = chai.expect
 
+CURRENT_LABEL = 'todo_current'
+UPCOMING_LABEL = 'todo_upcoming'
+SHELF_LABEL = 'hold'
+
 describe 'github-todos', ->
   beforeEach ->
     @robot = new Hubot.Robot(null, "mock-adapter", false, "Hubot")
@@ -93,80 +97,80 @@ describe 'github-todos', ->
 
   describe "hubot move <id> to <done|current|upcoming|shelf>", ->
     it 'works', ->
-      @sendCommand "move 11 to upcoming"
-      @expectCommand('moveIssue', '11', 'upcoming')
+      @sendCommand "move 11 to todo_upcoming"
+      @expectCommand('moveIssue', '11', UPCOMING_LABEL)
 
   describe "specifying a repo", ->
     it 'works with a simple repo name', ->
-      @sendCommand "move foobar#11 to upcoming"
-      @expectCommand('moveIssue', 'foobar#11', 'upcoming')
+      @sendCommand "move foobar#11 to todo_upcoming"
+      @expectCommand('moveIssue', 'foobar#11', UPCOMING_LABEL)
 
     it 'works with a more complex repo name', ->
-      @sendCommand "move screendoor-v2#11 to upcoming"
-      @expectCommand('moveIssue', 'screendoor-v2#11', 'upcoming')
+      @sendCommand "move screendoor-v2#11 to todo_upcoming"
+      @expectCommand('moveIssue', 'screendoor-v2#11', UPCOMING_LABEL)
 
   describe "hubot what am i working on", ->
     it 'works', ->
       @sendCommand "what am i working on"
-      @expectCommand('showIssues', 'adam', 'current')
+      @expectCommand('showIssues', 'adam', CURRENT_LABEL)
 
   describe "hubot what's <user|everyone> working on", ->
     it 'works', ->
       @sendCommand "what's clay working on?"
-      @expectCommand('showIssues', 'clay', 'current')
+      @expectCommand('showIssues', 'clay', CURRENT_LABEL)
 
     it 'works without apostrophe', ->
       @sendCommand "whats clay working on?"
-      @expectCommand('showIssues', 'clay', 'current')
+      @expectCommand('showIssues', 'clay', CURRENT_LABEL)
 
   describe "hubot what's next", ->
     it 'works', ->
       @sendCommand "what's next?"
-      @expectCommand('showIssues', 'adam', 'upcoming')
+      @expectCommand('showIssues', 'adam', UPCOMING_LABEL)
 
     it 'works without apostrophe', ->
       @sendCommand "whats next?"
-      @expectCommand('showIssues', 'adam', 'upcoming')
+      @expectCommand('showIssues', 'adam', UPCOMING_LABEL)
 
   describe "hubot what's next for <user|everyone>", ->
     it 'works', ->
       @sendCommand "what's next for clay?"
-      @expectCommand('showIssues', 'clay', 'upcoming')
+      @expectCommand('showIssues', 'clay', UPCOMING_LABEL)
 
     it 'works without apostrophe', ->
       @sendCommand "whats next for clay?"
-      @expectCommand('showIssues', 'clay', 'upcoming')
+      @expectCommand('showIssues', 'clay', UPCOMING_LABEL)
 
   describe "hubot what's on <user|everyone>'s shelf", ->
     it 'works', ->
       @sendCommand "what's on everyone's shelf?"
-      @expectCommand('showIssues', 'everyone', 'shelf')
+      @expectCommand('showIssues', 'everyone', SHELF_LABEL)
 
     it 'works without apostrophe', ->
       @sendCommand "whats on everyone's shelf?"
-      @expectCommand('showIssues', 'everyone', 'shelf')
+      @expectCommand('showIssues', 'everyone', SHELF_LABEL)
 
     it 'handles smart quotes', ->
       @sendCommand "what’s on everyone's shelf?"
-      @expectCommand('showIssues', 'everyone', 'shelf')
+      @expectCommand('showIssues', 'everyone', SHELF_LABEL)
 
   describe "hubot what's on my shelf", ->
     it 'works', ->
       @sendCommand "what's on my shelf?"
-      @expectCommand('showIssues', 'adam', 'shelf')
+      @expectCommand('showIssues', 'adam', SHELF_LABEL)
 
     it 'works without apostrophe', ->
       @sendCommand "whats on my shelf?"
-      @expectCommand('showIssues', 'adam', 'shelf')
+      @expectCommand('showIssues', 'adam', SHELF_LABEL)
 
   describe "hubot work on <id>", ->
     it 'works', ->
       @sendCommand "work on 12"
-      @expectCommand('moveIssue', '12', 'current')
+      @expectCommand('moveIssue', '12', CURRENT_LABEL)
 
     it 'parses complex repo name', ->
       @sendCommand "work on screendoor-v2#12"
-      @expectCommand('moveIssue', 'screendoor-v2#12', 'current')
+      @expectCommand('moveIssue', 'screendoor-v2#12', CURRENT_LABEL)
       @expectNoCommand('addIssue')
 
   describe "hubot show milestones", ->

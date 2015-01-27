@@ -14,7 +14,7 @@
 #   not to add them, you'll end up notifying yourself when you
 #   add a task.
 #
-#   You'll need to create 'done', 'trash', 'upcoming', 'shelf', and 'current' labels.
+#   You'll need to create UPCOMING_LABEL, SHELF_LABEL, and CURRENT_LABEL labels.
 #
 # Commands:
 #   hubot add task <text> #todos
@@ -45,6 +45,12 @@ _  = require 'underscore'
 _s = require 'underscore.string'
 async = require 'async'
 moment = require 'moment'
+
+SHELF_LABEL = 'hold'
+UPCOMING_LABEL = 'todo_upcoming'
+CURRENT_LABEL = 'todo_current'
+
+TRASH_COMMANDS = ['done', 'trash']
 
 log = (msgs...) ->
   console.log(msgs)
@@ -140,7 +146,7 @@ class GithubTodosSender
       title: title
       body: body || ''
       assignee: @getGithubUser(userName)
-      labels: [opts.label || 'upcoming']
+      labels: [opts.label || UPCOMING_LABEL]
 
     if opts.footer && _.isEmpty(@optionsFor(msg))
       sendData.body += "\n\n(added by #{@getGithubUser(msg.message.user.name) || 'unknown user'}. " +
@@ -155,13 +161,12 @@ class GithubTodosSender
     console.log 'moveIssue', @parseIssueString(issueId), "repos/#{@parseIssueString(issueId).repo}/issues/#{@parseIssueString(issueId).id}"
 
     @github.get "repos/#{@parseIssueString(issueId).repo}/issues/#{@parseIssueString(issueId).id}", (data) =>
-      console.log 'in'
       labelNames = _.pluck(data.labels, 'name')
-      labelNames = _.without(labelNames, 'done', 'trash', 'upcoming', 'shelf', 'current')
-      labelNames.push(newLabel.toLowerCase())
+      labelNames = _.without(labelNames, UPCOMING_LABEL, SHELF_LABEL, CURRENT_LABEL)
+      labelNames.push(newLabel.toLowerCase()) unless newLabel in TRASH_COMMANDS
 
       sendData =
-        state: if newLabel in ['done', 'trash'] then 'closed' else 'open'
+        state: if newLabel in TRASH_COMMANDS then 'closed' else 'open'
         labels: labelNames
 
       log "Moving issue", sendData
@@ -256,7 +261,7 @@ module.exports = (robot) ->
     robot.githubTodosSender.addIssue msg, msg.match[1], msg.message.user.name
 
   robot.respond /work on (\S*\#?\d+)/i, (msg) ->
-    robot.githubTodosSender.moveIssue msg, msg.match[1], 'current'
+    robot.githubTodosSender.moveIssue msg, msg.match[1], CURRENT_LABEL
 
   robot.respond /ask (\S+) to (.*)/i, (msg) ->
     robot.githubTodosSender.addIssue msg, msg.match[2], msg.match[1], footer: true
@@ -271,22 +276,22 @@ module.exports = (robot) ->
     robot.githubTodosSender.moveIssue msg, msg.match[1], 'done'
 
   robot.respond /what am i working on\??/i, (msg) ->
-    robot.githubTodosSender.showIssues msg, msg.message.user.name, 'current'
+    robot.githubTodosSender.showIssues msg, msg.message.user.name, CURRENT_LABEL
 
   robot.respond /what(['|’]s|s|\sis) (\S+) working on\??/i, (msg) ->
-    robot.githubTodosSender.showIssues msg, msg.match[2], 'current'
+    robot.githubTodosSender.showIssues msg, msg.match[2], CURRENT_LABEL
 
   robot.respond /what(['|’]s|s|\sis) next for (\S+)\??/i, (msg) ->
-    robot.githubTodosSender.showIssues msg, msg.match[2].replace('?', ''), 'upcoming'
+    robot.githubTodosSender.showIssues msg, msg.match[2].replace('?', ''), UPCOMING_LABEL
 
   robot.respond /what(['|’]s|s|\sis) next\??(\s*)$/i, (msg) ->
-    robot.githubTodosSender.showIssues msg, msg.message.user.name, 'upcoming'
+    robot.githubTodosSender.showIssues msg, msg.message.user.name, UPCOMING_LABEL
 
   robot.respond /what(['|’]s|s|\sis) on my shelf\??/i, (msg) ->
-    robot.githubTodosSender.showIssues msg, msg.message.user.name, 'shelf'
+    robot.githubTodosSender.showIssues msg, msg.message.user.name, SHELF_LABEL
 
   robot.respond /what(['|’]s|s|\sis) on (\S+) shelf\??/i, (msg) ->
-    robot.githubTodosSender.showIssues msg, msg.match[2].split('\'')[0], 'shelf'
+    robot.githubTodosSender.showIssues msg, msg.match[2].split('\'')[0], SHELF_LABEL
 
   robot.respond /assign (\S*\#?\d+) to (\S+)/i, (msg) ->
     robot.githubTodosSender.assignIssue msg, msg.match[1], msg.match[2]

@@ -172,7 +172,9 @@ class GithubTodosSender
       log "Moving issue", sendData
 
       @github.withOptions(@optionsFor(msg)).patch "repos/#{@parseIssueString(issueId).repo}/issues/#{@parseIssueString(issueId).id}", sendData, (data) =>
-        if _.find(data.labels, ((l) -> l.name.toLowerCase() == newLabel.toLowerCase()))
+        if newLabel in TRASH_COMMANDS
+          msg.send @getIssueText(data, prefix: "Closed: ")
+        else if _.find(data.labels, ((l) -> l.name.toLowerCase() == newLabel.toLowerCase()))
           msg.send @getIssueText(data, prefix: "Moved to #{newLabel.toLowerCase()}: ")
 
   commentOnIssue: (msg, issueId, body, opts = {}) ->

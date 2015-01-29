@@ -168,10 +168,28 @@ describe 'github-todos', ->
       @sendCommand "work on 12"
       @expectCommand('moveIssue', '12', CURRENT_LABEL)
 
+    it 'handles spaces', ->
+      @sendCommand "work on  12 "
+      @expectCommand('moveIssue', ' 12 ', CURRENT_LABEL)
+
+    it 'handles pound sign', ->
+      @sendCommand "work on #12"
+      @expectCommand('moveIssue', '#12', CURRENT_LABEL)
+
     it 'parses complex repo name', ->
       @sendCommand "work on screendoor-v2#12"
       @expectCommand('moveIssue', 'screendoor-v2#12', CURRENT_LABEL)
       @expectNoCommand('addIssue')
+
+    it 'adds a new task', ->
+      @sendCommand "work on doing the thing with 12 peanuts, y'all"
+      @expectCommand(
+        'addIssue',
+        "doing the thing with 12 peanuts, y'all",
+        'adam',
+        label: CURRENT_LABEL
+      )
+      @expectNoCommand('moveIssue')
 
   describe "hubot show milestones", ->
     it 'works', ->

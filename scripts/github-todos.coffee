@@ -33,6 +33,7 @@
 #   hubot what's on my shelf #todos
 #   hubot work on <id> #todos
 #   hubot work on <repo>#<id> #todos
+#   hubot work on <text> #todos
 #   hubot show milestones #todos
 #   hubot show milestones with a due date #todos
 #   hubot show milestones with due dates #todos
@@ -83,7 +84,7 @@ class GithubTodosSender
     else
       {
         repo: @primaryRepo
-        id: str.replace('#', '')
+        id: str.trim().replace('#', '')
       }
 
   getGithubUser: (userName) ->
@@ -262,8 +263,13 @@ module.exports = (robot) ->
   robot.respond /add task (.*)/i, (msg) ->
     robot.githubTodosSender.addIssue msg, msg.match[1], msg.message.user.name
 
-  robot.respond /work on (\S*\#?\d+)/i, (msg) ->
-    robot.githubTodosSender.moveIssue msg, msg.match[1], CURRENT_LABEL
+  robot.respond /work on (.*)/i, (msg) ->
+    # If we're working on an existing issue...
+    if msg.match[1].match(/\#\d+/) || msg.match[1].trim().match(/^\d+$/)
+      robot.githubTodosSender.moveIssue msg, msg.match[1], CURRENT_LABEL
+    # Otherwise, create one
+    else
+      robot.githubTodosSender.addIssue msg, msg.match[1], msg.message.user.name, label: CURRENT_LABEL
 
   robot.respond /ask (\S+) to (.*)/i, (msg) ->
     robot.githubTodosSender.addIssue msg, msg.match[2], msg.match[1], footer: true

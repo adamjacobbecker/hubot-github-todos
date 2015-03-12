@@ -56,6 +56,14 @@ TRASH_COMMANDS = ['done', 'trash']
 log = (msgs...) ->
   console.log(msgs)
 
+handleError = (err, msg) ->
+  log(err)
+  msg.send "An error occurred: #{err}"
+
+wrapErrorHandler = (msg) ->
+  (response) ->
+    handleError(response.error, msg)
+
 doubleUnquote = (x) ->
   _s.unquote(_s.unquote(x), "'")
     .replace(/^“/, '')
@@ -100,6 +108,8 @@ class GithubTodosSender
 
     if (x = @getGithubToken(msg.message.user.name))
       options.token = x
+
+    options.errorHandler = wrapErrorHandler(msg)
 
     options
 
@@ -161,7 +171,7 @@ class GithubTodosSender
   moveIssue: (msg, issueId, newLabel, opts = {}) ->
     console.log 'moveIssue', @parseIssueString(issueId), "repos/#{@parseIssueString(issueId).repo}/issues/#{@parseIssueString(issueId).id}"
 
-    @github.get "repos/#{@parseIssueString(issueId).repo}/issues/#{@parseIssueString(issueId).id}", (data) =>
+    @github.withOptions(errorHandler: wrapErrorHandler(msg)).get "repos/#{@parseIssueString(issueId).repo}/issues/#{@parseIssueString(issueId).id}", (data) =>
       labelNames = _.pluck(data.labels, 'name')
       labelNames = _.without(labelNames, UPCOMING_LABEL, SHELF_LABEL, CURRENT_LABEL)
       labelNames.push(newLabel.toLowerCase()) unless newLabel in TRASH_COMMANDS
@@ -208,12 +218,12 @@ class GithubTodosSender
     for repo in @allRepos
       do (repo) =>
         showIssueFunctions.push( (cb) =>
-          @github.get "repos/#{repo}/issues", queryParams, (data) ->
+          @github.withOptions(errorHandler: wrapErrorHandler(msg)).get "repos/#{repo}/issues", queryParams, (data) ->
             cb(null, data)
         )
 
     async.parallel showIssueFunctions, (err, results) =>
-      log("ERROR: #{err}") if err
+      handleError(err, msg) if err
       allResults = [].concat.apply([], results)
 
       if _.isEmpty allResults
@@ -238,12 +248,12 @@ class GithubTodosSender
     for repo in selectedRepos
       do (repo) =>
         showMilestoneFunctions.push( (cb) =>
-          @github.get "repos/#{repo}/milestones", queryParams, (data) ->
+          @github.withOptions(errorHandler: wrapErrorHandler(msg)).get "repos/#{repo}/milestones", queryParams, (data) ->
             cb(null, data)
         )
 
     async.parallel showMilestoneFunctions, (err, results) =>
-      log("ERROR: #{err}") if err
+      handleError(err, msg) if err
       allResults = [].concat.apply([], results)
 
       if opts.dueDate

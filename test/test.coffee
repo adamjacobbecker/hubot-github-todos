@@ -99,6 +99,18 @@ describe 'github-todos', ->
       @sendCommand "move 11 to todo_upcoming"
       @expectCommand('moveIssue', '11', UPCOMING_LABEL)
 
+    it 'has an alias from upcoming -> UPCOMING_LABEL', ->
+      @sendCommand "move 11 to upcoming"
+      @expectCommand('moveIssue', '11', UPCOMING_LABEL)
+
+    it 'has an alias from current -> CURRENT_LABEL', ->
+      @sendCommand "move 11 to current"
+      @expectCommand('moveIssue', '11', CURRENT_LABEL)
+
+    it 'has an alias from shelf -> SHELF_LABEL', ->
+      @sendCommand "move 11 to shelf"
+      @expectCommand('moveIssue', '11', SHELF_LABEL)
+
   describe "specifying a repo", ->
     it 'works with a simple repo name', ->
       @sendCommand "move foobar#11 to todo_upcoming"

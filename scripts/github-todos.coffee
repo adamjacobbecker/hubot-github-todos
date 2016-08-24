@@ -20,7 +20,7 @@
 #   hubot finish <id> #todos
 #   hubot finish <id> <text> #todos
 #   hubot i'll work on <id> #todos
-#   hubot move <id> to <done|current|upcoming|shelf> #todos
+#   hubot move <id> to <current|upcoming|shelf> #todos
 #   hubot what am i working on #todos
 #   hubot what's <user|everyone> working on #todos
 #   hubot what's next #todos
@@ -43,6 +43,11 @@ SHELF_LABEL = 'hold'
 UPCOMING_LABEL = 'todo_upcoming'
 CURRENT_LABEL = 'todo_current'
 TRASH_COMMANDS = ['done', 'trash']
+
+labelNameMaps =
+  shelf: SHELF_LABEL
+  upcoming: UPCOMING_LABEL
+  current: CURRENT_LABEL
 
 log = (msgs...) ->
   console.log(msgs)
@@ -228,7 +233,11 @@ module.exports = (robot) ->
     robot.githubTodosSender.addIssue msg, msg.match[2], msg.match[1], footer: true
 
   robot.respond /move (\S*\#?\d+) to (\S+)/i, (msg) ->
-    robot.githubTodosSender.moveIssue msg, msg.match[1], msg.match[2]
+    robot.githubTodosSender.moveIssue(
+      msg,
+      msg.match[1],
+      labelNameMaps[msg.match[2].toLowerCase()] || msg.match[2]
+    )
 
   robot.respond /finish (\S*\#?\d+)/i, (msg) ->
     if (comment = msg.message.text.split(GithubTodosSender.ISSUE_BODY_SEPARATOR)[1])

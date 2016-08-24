@@ -1,19 +1,15 @@
 # Configuration:
-#   HUBOT_GITHUB_TODOS_REPO
+#   HUBOT_GITHUB_TODOS_PRIMARY_REPO
 #   HUBOT_GITHUB_TOKEN
 #   HUBOT_GITHUB_USER_<NAME>
 #   HUBOT_GITHUB_USER_<NAME>_TOKEN
 #
 # Notes:
-#   HUBOT_GITHUB_TODOS_REPO = 'username/reponame' (separate multiple with commas, first one is primary)
+#   HUBOT_GITHUB_TODOS_PRIMARY_REPO = 'username/reponame'
 #   HUBOT_GITHUB_TOKEN = oauth token (we use a "dobthubot" github account)
 #   HUBOT_GITHUB_USER_ADAM = 'adamjacobbecker'
 #   HUBOT_GITHUB_USER_ADAM_TOKEN = adamjacobbecker's oauth token
-#
-#   Individual users' oauth tokens are opt-in, but if you choose
-#   not to add them, you'll end up notifying yourself when you
-#   add a task.
-#
+##
 #   You'll need to create UPCOMING_LABEL, SHELF_LABEL, and CURRENT_LABEL labels.
 #
 # Commands:
@@ -46,7 +42,6 @@ moment = require 'moment'
 SHELF_LABEL = 'hold'
 UPCOMING_LABEL = 'todo_upcoming'
 CURRENT_LABEL = 'todo_current'
-
 TRASH_COMMANDS = ['done', 'trash']
 
 log = (msgs...) ->
@@ -75,8 +70,7 @@ class GithubTodosSender
   constructor: (robot) ->
     @robot = robot
     @github = require("githubot")(@robot)
-    @allRepos = (process.env['HUBOT_GITHUB_TODOS_REPO'] || '').split(',') # default to empty string for tests
-    @primaryRepo = @allRepos[0]
+    @primaryRepo = process.env['HUBOT_GITHUB_TODOS_PRIMARY_REPO'] || '' # for tests
     @org = @primaryRepo.split('/')[0]
 
   parseIssueString: (str) ->
@@ -99,10 +93,10 @@ class GithubTodosSender
     log "Getting GitHub token for #{userName}"
     process.env["HUBOT_GITHUB_USER_#{userName.split(' ')[0].toUpperCase()}_TOKEN"]
 
-  optionsFor: (msg) ->
+  optionsFor: (msg, userName) ->
     options = {}
 
-    if (x = @getGithubToken(msg.message.user.name))
+    if userName != false && (x = @getGithubToken(userName || msg.message.user.name))
       options.token = x
 
     options.errorHandler = wrapErrorHandler(msg)
@@ -195,54 +189,26 @@ class GithubTodosSender
 
   showIssues: (msg, userName, label) ->
     queryParams =
-      assignee: if userName.toLowerCase() == 'everyone' then '*' else @getGithubUser(userName)
       labels: label
 
     log "Showing issues", queryParams
 
-    showIssueFunctions = []
-
-    for repo in @allRepos
-      do (repo) =>
-        showIssueFunctions.push( (cb) =>
-          @github.withOptions(errorHandler: wrapErrorHandler(msg)).get "repos/#{repo}/issues", queryParams, (data) ->
-            cb(null, data)
-        )
-
-    async.parallel showIssueFunctions, (err, results) =>
-      handleError(err, msg) if err
-      allResults = [].concat.apply([], results)
-
-      if _.isEmpty allResults
-          msg.send "No issues found."
-      else
-        msg.send _.map(allResults, ((issue) => @getIssueText(issue, { includeAssignee: queryParams.assignee == '*' }))).join("\n")
-
+    if userName.toLowerCase() == 'everyone'
+      options = @optionsFor(msg, false)
+      queryParams.filter = 'all'
     else
-      _.filter @allRepos, (repo) ->
-        repo.split('/')[1].match(repoName)
+      options = @optionsFor(msg, userName)
+      queryParams.filter = 'assigned'
 
-    for repo in selectedRepos
-      do (repo) =>
-        showMilestoneFunctions.push( (cb) =>
-          @github.withOptions(errorHandler: wrapErrorHandler(msg)).get "repos/#{repo}/milestones", queryParams, (data) ->
-            cb(null, data)
-        )
+    console.log options, queryParams
 
-    async.parallel showMilestoneFunctions, (err, results) =>
-      handleError(err, msg) if err
-      allResults = [].concat.apply([], results)
-
-      if opts.dueDate
-        allResults = _.filter allResults, (r) -> r.due_on
-
-      allResults = _.sortBy allResults, (r) ->
-        r.due_on || "9"
-
-      if _.isEmpty allResults
-          msg.send "No milestones found."
-      else
-        msg.send _.map(allResults, ((milestone) => @getMilestoneText(milestone))).join("\n")
+    @github.
+      withOptions(options).
+      get "/orgs/#{@org}/issues", queryParams, (data) =>
+        if _.isEmpty data
+            msg.send "No issues found."
+        else
+          msg.send _.map(data, ((issue) => @getIssueText(issue, { includeAssignee: queryParams.assignee == '*' }))).join("\n")
 
 module.exports = (robot) ->
   robot.githubTodosSender = new GithubTodosSender(robot)

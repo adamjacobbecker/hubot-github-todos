@@ -112,12 +112,9 @@ class GithubTodosSender
     str = "#{opts.prefix || ''}"
 
     if opts.includeAssignee
-      str += "#{issueObject.assignee?.login} - "
+      str += "@#{issueObject.assignee?.login}: "
 
-    if !issueObject.url.match(@primaryRepo)
-      str += "#{issueObject.url.split('repos/')[1].split('/issues')[0]} "
-
-    str += "##{issueObject.number} #{issueObject.title} - #{issueObject.html_url}"
+    str += "<#{issueObject.html_url}|#{issueObject.url.split('repos/')[1].split('/issues')[0]}##{issueObject.number}> - #{issueObject.title}"
 
     str
 
@@ -213,7 +210,7 @@ class GithubTodosSender
         if _.isEmpty data
             msg.send "No issues found."
         else
-          msg.send _.map(data, ((issue) => @getIssueText(issue, { includeAssignee: queryParams.assignee == '*' }))).join("\n")
+          msg.send _.map(data, ((issue) => @getIssueText(issue, { includeAssignee: queryParams.filter == 'all' }))).join("\n")
 
 module.exports = (robot) ->
   robot.githubTodosSender = new GithubTodosSender(robot)

@@ -34,10 +34,6 @@
 #   hubot work on <id> #todos
 #   hubot work on <repo>#<id> #todos
 #   hubot work on <text> #todos
-#   hubot show milestones #todos
-#   hubot show milestones with a due date #todos
-#   hubot show milestones with due dates #todos
-#   hubot show milestones for <repo> #todos
 #
 # License:
 #   MIT
@@ -125,15 +121,6 @@ class GithubTodosSender
     str += "##{issueObject.number} #{issueObject.title} - #{issueObject.html_url}"
 
     str
-
-  getMilestoneText: (milestoneObject, opts = {}) ->
-    repoName = milestoneObject.url.split('repos/')[1].split('/milestones')[0]
-    milestoneIssuesUrl = "https://github.com/#{repoName}/issues?milestone=#{milestoneObject.number}&state=open"
-    dueDateText = if milestoneObject.due_on then moment(milestoneObject.due_on).fromNow(true) else "No due date"
-
-    """
-      #{repoName} #{milestoneObject.title} - #{dueDateText} - #{milestoneIssuesUrl}
-    """
 
   addIssueEveryone: (msg, issueBody, opts) ->
     userNames = {}
@@ -231,16 +218,6 @@ class GithubTodosSender
       else
         msg.send _.map(allResults, ((issue) => @getIssueText(issue, { includeAssignee: queryParams.assignee == '*' }))).join("\n")
 
-  showMilestones: (msg, repoName, opts = {}) ->
-    queryParams =
-      state: 'open'
-
-    log "Showing milestones", queryParams
-
-    showMilestoneFunctions = []
-
-    selectedRepos = if repoName == 'all'
-      @allRepos
     else
       _.filter @allRepos, (repo) ->
         repo.split('/')[1].match(repoName)
@@ -319,12 +296,3 @@ module.exports = (robot) ->
 
   robot.respond /i(['|’]ll|ll) work on (\S*\#?\d+)/i, (msg) ->
     robot.githubTodosSender.assignIssue msg, msg.match[2], msg.message.user.name
-
-  robot.respond /show milestones for (\S+)/i, (msg) ->
-    robot.githubTodosSender.showMilestones msg, msg.match[1], dueDate: (if msg.message.match('due date') then true else false)
-
-  robot.respond /show milestones(\s*)$/i, (msg) ->
-    robot.githubTodosSender.showMilestones msg, 'all'
-
-  robot.respond /show milestones with (a\s)?due date/i, (msg) ->
-    robot.githubTodosSender.showMilestones msg, 'all', dueDate: true

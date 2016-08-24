@@ -21,7 +21,6 @@ describe 'github-todos', ->
       moveIssue: sinon.spy()
       assignIssue: sinon.spy()
       showIssues: sinon.spy()
-      showMilestones: sinon.spy()
       commentOnIssue: sinon.spy()
 
     @sendCommand = (x) ->
@@ -190,29 +189,3 @@ describe 'github-todos', ->
         label: CURRENT_LABEL
       )
       @expectNoCommand('moveIssue')
-
-  describe "hubot show milestones", ->
-    it 'works', ->
-      @sendCommand "show milestones"
-      @expectCommand('showMilestones', 'all')
-
-    it 'specifies due date only', ->
-      @sendCommand "show milestones with a due date"
-      @expectCommand('showMilestones', 'all', dueDate: true)
-
-    it 'specifies due date only v2', ->
-      @sendCommand "show milestones with due dates"
-      @expectCommand('showMilestones', 'all', dueDate: true)
-
-  describe "hubot show milestones for <repo>", ->
-    it 'works', ->
-      @sendCommand "show milestones for screendoor-v2"
-      @expectCommand('showMilestones', 'screendoor-v2', dueDate: false)
-
-    it 'specifies due date only', ->
-      @sendCommand "show milestones for screendoor-v2 with a due date"
-      @expectCommand('showMilestones', 'screendoor-v2', dueDate: true)
-
-    it 'specifies due date only v2', ->
-      @sendCommand "show milestones for screendoor-v2 with due dates"
-      @expectCommand('showMilestones', 'screendoor-v2', dueDate: true)

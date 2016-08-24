@@ -1,19 +1,15 @@
 # Configuration:
-#   HUBOT_GITHUB_TODOS_REPO
+#   HUBOT_GITHUB_TODOS_PRIMARY_REPO
 #   HUBOT_GITHUB_TOKEN
 #   HUBOT_GITHUB_USER_<NAME>
 #   HUBOT_GITHUB_USER_<NAME>_TOKEN
 #
 # Notes:
-#   HUBOT_GITHUB_TODOS_REPO = 'username/reponame' (separate multiple with commas, first one is primary)
+#   HUBOT_GITHUB_TODOS_PRIMARY_REPO = 'username/reponame'
 #   HUBOT_GITHUB_TOKEN = oauth token (we use a "dobthubot" github account)
 #   HUBOT_GITHUB_USER_ADAM = 'adamjacobbecker'
 #   HUBOT_GITHUB_USER_ADAM_TOKEN = adamjacobbecker's oauth token
-#
-#   Individual users' oauth tokens are opt-in, but if you choose
-#   not to add them, you'll end up notifying yourself when you
-#   add a task.
-#
+##
 #   You'll need to create UPCOMING_LABEL, SHELF_LABEL, and CURRENT_LABEL labels.
 #
 # Commands:
@@ -24,7 +20,7 @@
 #   hubot finish <id> #todos
 #   hubot finish <id> <text> #todos
 #   hubot i'll work on <id> #todos
-#   hubot move <id> to <done|current|upcoming|shelf> #todos
+#   hubot move <id> to <current|upcoming|shelf> #todos
 #   hubot what am i working on #todos
 #   hubot what's <user|everyone> working on #todos
 #   hubot what's next #todos
@@ -34,10 +30,6 @@
 #   hubot work on <id> #todos
 #   hubot work on <repo>#<id> #todos
 #   hubot work on <text> #todos
-#   hubot show milestones #todos
-#   hubot show milestones with a due date #todos
-#   hubot show milestones with due dates #todos
-#   hubot show milestones for <repo> #todos
 #
 # License:
 #   MIT
@@ -50,8 +42,12 @@ moment = require 'moment'
 SHELF_LABEL = 'hold'
 UPCOMING_LABEL = 'todo_upcoming'
 CURRENT_LABEL = 'todo_current'
-
 TRASH_COMMANDS = ['done', 'trash']
+
+labelNameMaps =
+  shelf: SHELF_LABEL
+  upcoming: UPCOMING_LABEL
+  current: CURRENT_LABEL
 
 log = (msgs...) ->
   console.log(msgs)
@@ -79,8 +75,7 @@ class GithubTodosSender
   constructor: (robot) ->
     @robot = robot
     @github = require("githubot")(@robot)
-    @allRepos = (process.env['HUBOT_GITHUB_TODOS_REPO'] || '').split(',') # default to empty string for tests
-    @primaryRepo = @allRepos[0]
+    @primaryRepo = process.env['HUBOT_GITHUB_TODOS_PRIMARY_REPO'] || '' # for tests
     @org = @primaryRepo.split('/')[0]
 
   parseIssueString: (str) ->
@@ -103,10 +98,10 @@ class GithubTodosSender
     log "Getting GitHub token for #{userName}"
     process.env["HUBOT_GITHUB_USER_#{userName.split(' ')[0].toUpperCase()}_TOKEN"]
 
-  optionsFor: (msg) ->
+  optionsFor: (msg, userName) ->
     options = {}
 
-    if (x = @getGithubToken(msg.message.user.name))
+    if userName != false && (x = @getGithubToken(userName || msg.message.user.name))
       options.token = x
 
     options.errorHandler = wrapErrorHandler(msg)
@@ -117,23 +112,11 @@ class GithubTodosSender
     str = "#{opts.prefix || ''}"
 
     if opts.includeAssignee
-      str += "#{issueObject.assignee?.login} - "
+      str += "@#{issueObject.assignee?.login}: "
 
-    if !issueObject.url.match(@primaryRepo)
-      str += "#{issueObject.url.split('repos/')[1].split('/issues')[0]} "
-
-    str += "##{issueObject.number} #{issueObject.title} - #{issueObject.html_url}"
+    str += "<#{issueObject.html_url}|#{issueObject.url.split('repos/')[1].split('/issues')[0]}##{issueObject.number}> - #{issueObject.title}"
 
     str
-
-  getMilestoneText: (milestoneObject, opts = {}) ->
-    repoName = milestoneObject.url.split('repos/')[1].split('/milestones')[0]
-    milestoneIssuesUrl = "https://github.com/#{repoName}/issues?milestone=#{milestoneObject.number}&state=open"
-    dueDateText = if milestoneObject.due_on then moment(milestoneObject.due_on).fromNow(true) else "No due date"
-
-    """
-      #{repoName} #{milestoneObject.title} - #{dueDateText} - #{milestoneIssuesUrl}
-    """
 
   addIssueEveryone: (msg, issueBody, opts) ->
     userNames = {}
@@ -208,64 +191,26 @@ class GithubTodosSender
 
   showIssues: (msg, userName, label) ->
     queryParams =
-      assignee: if userName.toLowerCase() == 'everyone' then '*' else @getGithubUser(userName)
       labels: label
 
     log "Showing issues", queryParams
 
-    showIssueFunctions = []
-
-    for repo in @allRepos
-      do (repo) =>
-        showIssueFunctions.push( (cb) =>
-          @github.withOptions(errorHandler: wrapErrorHandler(msg)).get "repos/#{repo}/issues", queryParams, (data) ->
-            cb(null, data)
-        )
-
-    async.parallel showIssueFunctions, (err, results) =>
-      handleError(err, msg) if err
-      allResults = [].concat.apply([], results)
-
-      if _.isEmpty allResults
-          msg.send "No issues found."
-      else
-        msg.send _.map(allResults, ((issue) => @getIssueText(issue, { includeAssignee: queryParams.assignee == '*' }))).join("\n")
-
-  showMilestones: (msg, repoName, opts = {}) ->
-    queryParams =
-      state: 'open'
-
-    log "Showing milestones", queryParams
-
-    showMilestoneFunctions = []
-
-    selectedRepos = if repoName == 'all'
-      @allRepos
+    if userName.toLowerCase() == 'everyone'
+      options = @optionsFor(msg, false)
+      queryParams.filter = 'all'
     else
-      _.filter @allRepos, (repo) ->
-        repo.split('/')[1].match(repoName)
+      options = @optionsFor(msg, userName)
+      queryParams.filter = 'assigned'
 
-    for repo in selectedRepos
-      do (repo) =>
-        showMilestoneFunctions.push( (cb) =>
-          @github.withOptions(errorHandler: wrapErrorHandler(msg)).get "repos/#{repo}/milestones", queryParams, (data) ->
-            cb(null, data)
-        )
+    console.log options, queryParams
 
-    async.parallel showMilestoneFunctions, (err, results) =>
-      handleError(err, msg) if err
-      allResults = [].concat.apply([], results)
-
-      if opts.dueDate
-        allResults = _.filter allResults, (r) -> r.due_on
-
-      allResults = _.sortBy allResults, (r) ->
-        r.due_on || "9"
-
-      if _.isEmpty allResults
-          msg.send "No milestones found."
-      else
-        msg.send _.map(allResults, ((milestone) => @getMilestoneText(milestone))).join("\n")
+    @github.
+      withOptions(options).
+      get "/orgs/#{@org}/issues", queryParams, (data) =>
+        if _.isEmpty data
+            msg.send "No issues found."
+        else
+          msg.send _.map(data, ((issue) => @getIssueText(issue, { includeAssignee: queryParams.filter == 'all' }))).join("\n")
 
 module.exports = (robot) ->
   robot.githubTodosSender = new GithubTodosSender(robot)
@@ -285,7 +230,11 @@ module.exports = (robot) ->
     robot.githubTodosSender.addIssue msg, msg.match[2], msg.match[1], footer: true
 
   robot.respond /move (\S*\#?\d+) to (\S+)/i, (msg) ->
-    robot.githubTodosSender.moveIssue msg, msg.match[1], msg.match[2]
+    robot.githubTodosSender.moveIssue(
+      msg,
+      msg.match[1],
+      labelNameMaps[msg.match[2].toLowerCase()] || msg.match[2]
+    )
 
   robot.respond /finish (\S*\#?\d+)/i, (msg) ->
     if (comment = msg.message.text.split(GithubTodosSender.ISSUE_BODY_SEPARATOR)[1])
@@ -319,12 +268,3 @@ module.exports = (robot) ->
 
   robot.respond /i(['|’]ll|ll) work on (\S*\#?\d+)/i, (msg) ->
     robot.githubTodosSender.assignIssue msg, msg.match[2], msg.message.user.name
-
-  robot.respond /show milestones for (\S+)/i, (msg) ->
-    robot.githubTodosSender.showMilestones msg, msg.match[1], dueDate: (if msg.message.match('due date') then true else false)
-
-  robot.respond /show milestones(\s*)$/i, (msg) ->
-    robot.githubTodosSender.showMilestones msg, 'all'
-
-  robot.respond /show milestones with (a\s)?due date/i, (msg) ->
-    robot.githubTodosSender.showMilestones msg, 'all', dueDate: true

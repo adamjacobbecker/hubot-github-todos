@@ -21,7 +21,6 @@ describe 'github-todos', ->
       moveIssue: sinon.spy()
       assignIssue: sinon.spy()
       showIssues: sinon.spy()
-      showMilestones: sinon.spy()
       commentOnIssue: sinon.spy()
 
     @sendCommand = (x) ->
@@ -99,6 +98,18 @@ describe 'github-todos', ->
     it 'works', ->
       @sendCommand "move 11 to todo_upcoming"
       @expectCommand('moveIssue', '11', UPCOMING_LABEL)
+
+    it 'has an alias from upcoming -> UPCOMING_LABEL', ->
+      @sendCommand "move 11 to upcoming"
+      @expectCommand('moveIssue', '11', UPCOMING_LABEL)
+
+    it 'has an alias from current -> CURRENT_LABEL', ->
+      @sendCommand "move 11 to current"
+      @expectCommand('moveIssue', '11', CURRENT_LABEL)
+
+    it 'has an alias from shelf -> SHELF_LABEL', ->
+      @sendCommand "move 11 to shelf"
+      @expectCommand('moveIssue', '11', SHELF_LABEL)
 
   describe "specifying a repo", ->
     it 'works with a simple repo name', ->
@@ -190,29 +201,3 @@ describe 'github-todos', ->
         label: CURRENT_LABEL
       )
       @expectNoCommand('moveIssue')
-
-  describe "hubot show milestones", ->
-    it 'works', ->
-      @sendCommand "show milestones"
-      @expectCommand('showMilestones', 'all')
-
-    it 'specifies due date only', ->
-      @sendCommand "show milestones with a due date"
-      @expectCommand('showMilestones', 'all', dueDate: true)
-
-    it 'specifies due date only v2', ->
-      @sendCommand "show milestones with due dates"
-      @expectCommand('showMilestones', 'all', dueDate: true)
-
-  describe "hubot show milestones for <repo>", ->
-    it 'works', ->
-      @sendCommand "show milestones for screendoor-v2"
-      @expectCommand('showMilestones', 'screendoor-v2', dueDate: false)
-
-    it 'specifies due date only', ->
-      @sendCommand "show milestones for screendoor-v2 with a due date"
-      @expectCommand('showMilestones', 'screendoor-v2', dueDate: true)
-
-    it 'specifies due date only v2', ->
-      @sendCommand "show milestones for screendoor-v2 with due dates"
-      @expectCommand('showMilestones', 'screendoor-v2', dueDate: true)

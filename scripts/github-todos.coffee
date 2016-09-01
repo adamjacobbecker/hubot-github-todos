@@ -44,6 +44,16 @@ UPCOMING_LABEL = 'todo_upcoming'
 CURRENT_LABEL = 'todo_current'
 TRASH_COMMANDS = ['done', 'trash']
 
+estEmojiMap =
+  est_1: 'one'
+  est_2: 'two'
+  est_3: 'three'
+  est_4: 'four'
+  est_5: 'five'
+  est_6: 'six'
+  est_7: 'seven'
+  est_8: 'eight'
+
 labelNameMaps =
   shelf: SHELF_LABEL
   upcoming: UPCOMING_LABEL
@@ -115,6 +125,12 @@ class GithubTodosSender
       str += "@#{issueObject.assignee?.login}: "
 
     str += "<#{issueObject.html_url}|#{issueObject.url.split('repos/')[1].split('/issues')[0]}##{issueObject.number}> - #{issueObject.title}"
+
+    labelNames = _.pluck issueObject.labels, 'name'
+
+    if (est = _.find(labelNames, ((n) -> n.match(/^est_/))))
+      if (estEmoji = estEmojiMap[est])
+        str += " :#{estEmoji}:"
 
     str
 

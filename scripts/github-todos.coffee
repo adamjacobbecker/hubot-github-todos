@@ -62,7 +62,7 @@ labelNameMaps =
   current: CURRENT_LABEL
 
 log = (msgs...) ->
-  console.log(msgs)
+  console.log(msgs) if process.env.HUBOT_GITHUB_TODOS_LOG
 
 handleError = (err, msg) ->
   log(err)
@@ -171,7 +171,7 @@ class GithubTodosSender
       msg.send @getIssueText(data, prefix: "Added: ")
 
   moveIssue: (msg, issueId, newLabel, opts = {}) ->
-    console.log 'moveIssue', @parseIssueString(issueId), "repos/#{@parseIssueString(issueId).repo}/issues/#{@parseIssueString(issueId).id}"
+    log 'moveIssue', @parseIssueString(issueId), "repos/#{@parseIssueString(issueId).repo}/issues/#{@parseIssueString(issueId).id}"
 
     @github.withOptions(errorHandler: wrapErrorHandler(msg)).get "repos/#{@parseIssueString(issueId).repo}/issues/#{@parseIssueString(issueId).id}", (data) =>
       labelNames = _.pluck(data.labels, 'name')
@@ -221,7 +221,7 @@ class GithubTodosSender
       options = @optionsFor(msg, userName)
       queryParams.filter = 'assigned'
 
-    console.log options, queryParams
+    log options, queryParams
 
     @github.
       withOptions(options).

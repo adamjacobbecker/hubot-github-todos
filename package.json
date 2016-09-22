@@ -1,6 +1,6 @@
 {
   "name": "hubot-github-todos",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Team management with Github Issues.",
   "main": "index.coffee",
   "scripts": {

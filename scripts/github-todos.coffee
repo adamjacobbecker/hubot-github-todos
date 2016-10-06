@@ -14,6 +14,7 @@
 #
 # Commands:
 #   hubot add task <text> #todos
+#   hubot add task <text> to <repo> #todos
 #   hubot ask <user|everyone> to <text> #todos
 #   hubot assign <id> to <user> #todos
 #   hubot assign <user> to <id> #todos
@@ -167,7 +168,15 @@ class GithubTodosSender
 
     log "Adding issue", sendData
 
-    @github.withOptions(@optionsFor(msg)).post "repos/#{@primaryRepo}/issues", sendData, (data) =>
+    repo = if opts.repo
+             if opts.repo.match('/')
+               opts.repo
+             else
+               "#{@org}/#{opts.repo}"
+           else
+             @primaryRepo
+
+    @github.withOptions(@optionsFor(msg)).post "repos/#{repo}/issues", sendData, (data) =>
       msg.send @getIssueText(data, prefix: "Added: ")
 
   moveIssue: (msg, issueId, newLabel, opts = {}) ->
@@ -235,7 +244,11 @@ module.exports = (robot) ->
   robot.githubTodosSender = new GithubTodosSender(robot)
 
   robot.respond /add task (.*)/i, (msg) ->
-    robot.githubTodosSender.addIssue msg, msg.match[1], msg.message.user.name
+    if (repo = msg.match[1].match(/to (\S+)$/))
+      body = msg.match[1].replace(repo[0], '').trim()
+      robot.githubTodosSender.addIssue msg, body, msg.message.user.name, repo: repo[1].trim()
+    else
+      robot.githubTodosSender.addIssue msg, msg.match[1], msg.message.user.name
 
   robot.respond /work on (.*)/i, (msg) ->
     # If we're working on an existing issue...

@@ -38,6 +38,14 @@ describe 'github-todos', ->
       @sendCommand 'add task foo'
       @expectCommand('addIssue', 'foo', 'adam')
 
+    it 'works with a string containing "to"', ->
+      @sendCommand 'add task go to the store'
+      @expectCommand('addIssue', 'go to the store', 'adam')
+
+    it 'adds in a different repo', ->
+      @sendCommand 'add task "foo" to screendoor-v2'
+      @expectCommand('addIssue', '"foo"', 'adam', sinon.match(repo: 'screendoor-v2'))
+
   describe "hubot add task with hyphen in text", ->
     it 'works', ->
       @sendCommand 'add task do a flim-flam to the blip-blop'
